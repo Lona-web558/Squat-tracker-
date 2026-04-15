@@ -1,0 +1,1061 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SquatFlow — Bodyweight Tracker</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Mono:wght@300;400;500&family=DM+Sans:wght@300;400;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0a0a0a;
+    --surface: #111111;
+    --card: #171717;
+    --border: #252525;
+    --accent: #c8f542;
+    --accent2: #f5e642;
+    --red: #f54242;
+    --muted: #555;
+    --text: #e8e8e8;
+    --text2: #888;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* NAV */
+  nav {
+    position: fixed;
+    top: 0; left: 0; right: 0;
+    z-index: 100;
+    background: rgba(10,10,10,0.92);
+    backdrop-filter: blur(14px);
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 24px;
+    height: 58px;
+  }
+
+  .nav-brand {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 1.6rem;
+    letter-spacing: 2px;
+    color: var(--accent);
+  }
+
+  .nav-brand span { color: var(--text2); font-size: 0.9rem; letter-spacing: 1px; font-family: 'DM Mono', monospace; font-weight: 300; }
+
+  .nav-tabs {
+    display: flex;
+    gap: 2px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 3px;
+  }
+
+  .nav-tab {
+    background: none;
+    border: none;
+    color: var(--text2);
+    font-family: 'DM Mono', monospace;
+    font-size: 0.72rem;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    padding: 6px 14px;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  .nav-tab.active {
+    background: var(--accent);
+    color: #000;
+    font-weight: 500;
+  }
+
+  .nav-tab:hover:not(.active) { color: var(--text); background: var(--border); }
+
+  .nav-clock {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.78rem;
+    color: var(--text2);
+    text-align: right;
+    line-height: 1.4;
+  }
+
+  .nav-clock .time { color: var(--accent); font-size: 1rem; font-weight: 500; }
+
+  /* PAGES */
+  .page { display: none; padding: 80px 0 40px; min-height: 100vh; }
+  .page.active { display: block; }
+
+  .container { max-width: 840px; margin: 0 auto; padding: 0 20px; }
+
+  /* HERO */
+  .hero {
+    padding: 40px 0 28px;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 32px;
+  }
+
+  .hero-label {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.68rem;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin-bottom: 8px;
+  }
+
+  .hero-title {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: clamp(3rem, 8vw, 5.5rem);
+    letter-spacing: 3px;
+    line-height: 0.95;
+    color: var(--text);
+  }
+
+  .hero-title span { color: var(--accent); }
+
+  .hero-sub { color: var(--text2); font-size: 0.85rem; margin-top: 10px; font-weight: 300; }
+
+  /* STATS ROW */
+  .stats-row {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+    margin-bottom: 28px;
+  }
+
+  .stat-card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 18px 20px;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .stat-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 2px;
+    background: var(--accent);
+    transform: scaleX(0);
+    transform-origin: left;
+    transition: transform 0.4s ease;
+  }
+
+  .stat-card.lit::before { transform: scaleX(1); }
+
+  .stat-label {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.62rem;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--text2);
+    margin-bottom: 6px;
+  }
+
+  .stat-value {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 2.4rem;
+    letter-spacing: 1px;
+    color: var(--text);
+    line-height: 1;
+  }
+
+  .stat-value.accent { color: var(--accent); }
+  .stat-unit { font-size: 0.72rem; color: var(--text2); font-family: 'DM Mono', monospace; margin-top: 3px; }
+
+  /* WORKOUT PANEL */
+  .workout-panel {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    overflow: hidden;
+    margin-bottom: 24px;
+  }
+
+  .panel-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 18px 22px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .panel-title {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 1.2rem;
+    letter-spacing: 2px;
+    color: var(--text2);
+  }
+
+  .badge {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.65rem;
+    letter-spacing: 1px;
+    padding: 3px 10px;
+    border-radius: 20px;
+    text-transform: uppercase;
+  }
+
+  .badge-green { background: rgba(200,245,66,0.12); color: var(--accent); border: 1px solid rgba(200,245,66,0.25); }
+  .badge-yellow { background: rgba(245,230,66,0.12); color: var(--accent2); border: 1px solid rgba(245,230,66,0.25); }
+  .badge-red { background: rgba(245,66,66,0.12); color: var(--red); border: 1px solid rgba(245,66,66,0.25); }
+
+  .panel-body { padding: 22px; }
+
+  /* TIMER */
+  .timer-display {
+    text-align: center;
+    margin-bottom: 24px;
+  }
+
+  .timer-big {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: clamp(4rem, 15vw, 7rem);
+    letter-spacing: 4px;
+    color: var(--text);
+    line-height: 1;
+    transition: color 0.3s;
+  }
+
+  .timer-big.running { color: var(--accent); }
+  .timer-big.paused { color: var(--accent2); }
+
+  .timer-label {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.65rem;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    color: var(--text2);
+    margin-top: 4px;
+  }
+
+  /* CONTROLS */
+  .controls {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 10px;
+    margin-bottom: 24px;
+  }
+
+  .btn {
+    border: none;
+    border-radius: 10px;
+    font-family: 'DM Mono', monospace;
+    font-size: 0.78rem;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    padding: 13px 10px;
+    cursor: pointer;
+    transition: all 0.18s;
+    font-weight: 500;
+  }
+
+  .btn-accent { background: var(--accent); color: #000; }
+  .btn-accent:hover { background: #d4ff44; transform: translateY(-1px); box-shadow: 0 6px 20px rgba(200,245,66,0.25); }
+
+  .btn-outline { background: transparent; color: var(--text); border: 1px solid var(--border); }
+  .btn-outline:hover { border-color: var(--accent); color: var(--accent); }
+
+  .btn-danger { background: transparent; color: var(--red); border: 1px solid rgba(245,66,66,0.3); }
+  .btn-danger:hover { background: rgba(245,66,66,0.1); }
+
+  .btn-wide { grid-column: span 2; }
+  .btn-full { grid-column: span 3; }
+
+  /* REP / SET CONTROLS */
+  .rep-set-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    margin-bottom: 22px;
+  }
+
+  .counter-box {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 16px;
+    text-align: center;
+  }
+
+  .counter-label {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.62rem;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--text2);
+    margin-bottom: 10px;
+  }
+
+  .counter-val {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 2.8rem;
+    color: var(--text);
+    letter-spacing: 2px;
+    line-height: 1;
+    margin-bottom: 10px;
+  }
+
+  .counter-btns { display: flex; gap: 8px; justify-content: center; }
+
+  .ctr-btn {
+    width: 36px; height: 36px;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    background: var(--card);
+    color: var(--text);
+    font-size: 1.2rem;
+    cursor: pointer;
+    transition: all 0.15s;
+    display: flex; align-items: center; justify-content: center;
+    font-family: 'DM Mono', monospace;
+  }
+
+  .ctr-btn:hover { border-color: var(--accent); color: var(--accent); }
+  .ctr-btn.plus:hover { background: rgba(200,245,66,0.12); }
+
+  /* LOG TABLE */
+  .log-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.82rem;
+  }
+
+  .log-table th {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.6rem;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--text2);
+    text-align: left;
+    padding: 10px 12px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .log-table td {
+    padding: 11px 12px;
+    border-bottom: 1px solid rgba(37,37,37,0.6);
+    color: var(--text);
+    font-family: 'DM Mono', monospace;
+    font-size: 0.78rem;
+  }
+
+  .log-table tr:last-child td { border-bottom: none; }
+  .log-table tr:hover td { background: rgba(255,255,255,0.02); }
+
+  .log-empty {
+    text-align: center;
+    color: var(--text2);
+    font-family: 'DM Mono', monospace;
+    font-size: 0.75rem;
+    padding: 40px 20px;
+    letter-spacing: 1px;
+  }
+
+  /* HISTORY PAGE */
+  .history-card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    margin-bottom: 14px;
+    overflow: hidden;
+    transition: border-color 0.2s;
+  }
+
+  .history-card:hover { border-color: rgba(200,245,66,0.3); }
+
+  .history-card-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 14px 18px;
+    border-bottom: 1px solid var(--border);
+    cursor: pointer;
+  }
+
+  .history-date {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.75rem;
+    color: var(--accent);
+    letter-spacing: 1px;
+  }
+
+  .history-meta {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.7rem;
+    color: var(--text2);
+  }
+
+  .history-summary {
+    display: flex;
+    gap: 20px;
+    padding: 12px 18px;
+  }
+
+  .h-stat { }
+  .h-stat-v { font-family: 'Bebas Neue', sans-serif; font-size: 1.5rem; color: var(--text); letter-spacing: 1px; }
+  .h-stat-l { font-family: 'DM Mono', monospace; font-size: 0.6rem; color: var(--text2); letter-spacing: 1px; text-transform: uppercase; }
+
+  /* GOALS PAGE */
+  .goal-row {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 18px 20px;
+    margin-bottom: 12px;
+  }
+
+  .goal-header { display: flex; justify-content: space-between; margin-bottom: 10px; }
+  .goal-name { font-size: 0.88rem; font-weight: 600; }
+  .goal-prog-text { font-family: 'DM Mono', monospace; font-size: 0.75rem; color: var(--accent); }
+
+  .goal-bar-bg {
+    height: 6px;
+    background: var(--border);
+    border-radius: 4px;
+    overflow: hidden;
+  }
+
+  .goal-bar-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--accent), var(--accent2));
+    border-radius: 4px;
+    transition: width 0.6s ease;
+  }
+
+  .goal-sub { font-size: 0.75rem; color: var(--text2); margin-top: 6px; }
+
+  /* INPUT FIELDS */
+  .input-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    margin-bottom: 14px;
+  }
+
+  .input-group { display: flex; flex-direction: column; gap: 6px; }
+
+  .input-label {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.62rem;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--text2);
+  }
+
+  .input-field {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 10px 14px;
+    color: var(--text);
+    font-family: 'DM Mono', monospace;
+    font-size: 0.85rem;
+    width: 100%;
+    transition: border-color 0.2s;
+  }
+
+  .input-field:focus { outline: none; border-color: var(--accent); }
+
+  /* REST TIMER */
+  .rest-bar-bg {
+    height: 4px;
+    background: var(--border);
+    border-radius: 2px;
+    overflow: hidden;
+    margin-bottom: 8px;
+  }
+
+  .rest-bar-fill {
+    height: 100%;
+    background: var(--accent2);
+    border-radius: 2px;
+    transition: width 0.1s linear;
+  }
+
+  .rest-label {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.65rem;
+    color: var(--text2);
+    letter-spacing: 1px;
+    text-align: right;
+    margin-bottom: 14px;
+  }
+
+  /* PULSE */
+  @keyframes pulse {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.015); }
+  }
+
+  .pulse { animation: pulse 1.5s ease-in-out infinite; }
+
+  @keyframes slideIn {
+    from { opacity: 0; transform: translateY(12px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .slide-in { animation: slideIn 0.35s ease forwards; }
+
+  /* TOAST */
+  .toast {
+    position: fixed;
+    bottom: 28px;
+    left: 50%;
+    transform: translateX(-50%) translateY(80px);
+    background: var(--accent);
+    color: #000;
+    font-family: 'DM Mono', monospace;
+    font-size: 0.78rem;
+    letter-spacing: 1px;
+    padding: 10px 22px;
+    border-radius: 30px;
+    z-index: 999;
+    transition: transform 0.3s ease;
+    white-space: nowrap;
+    font-weight: 500;
+  }
+
+  .toast.show { transform: translateX(-50%) translateY(0); }
+
+  /* SCROLLBAR */
+  ::-webkit-scrollbar { width: 4px; }
+  ::-webkit-scrollbar-track { background: var(--bg); }
+  ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+  @media (max-width: 600px) {
+    .stats-row { grid-template-columns: 1fr 1fr; }
+    .controls { grid-template-columns: 1fr 1fr; }
+    .btn-wide { grid-column: span 2; }
+    .btn-full { grid-column: span 2; }
+    nav { padding: 0 14px; }
+    .nav-brand span { display: none; }
+  }
+</style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav>
+  <div>
+    <div class="nav-brand">SQUAT<span>FLOW</span></div>
+  </div>
+  <div class="nav-tabs">
+    <button class="nav-tab active" onclick="showPage('workout')">Workout</button>
+    <button class="nav-tab" onclick="showPage('history')">History</button>
+    <button class="nav-tab" onclick="showPage('goals')">Goals</button>
+  </div>
+  <div class="nav-clock">
+    <div class="time" id="navTime">00:00:00</div>
+    <div id="navDate">Loading...</div>
+  </div>
+</nav>
+
+<!-- TOAST -->
+<div class="toast" id="toast"></div>
+
+<!-- ====== WORKOUT PAGE ====== -->
+<div class="page active" id="page-workout">
+  <div class="container">
+    <div class="hero">
+      <div class="hero-label">Bodyweight Training</div>
+      <div class="hero-title">DAILY<br><span>SQUAT</span> SESSION</div>
+      <div class="hero-sub" id="heroDate">Loading date...</div>
+    </div>
+
+    <!-- STATS ROW -->
+    <div class="stats-row">
+      <div class="stat-card" id="statSets">
+        <div class="stat-label">Sets Done</div>
+        <div class="stat-value accent" id="totalSets">0</div>
+        <div class="stat-unit">of session</div>
+      </div>
+      <div class="stat-card" id="statReps">
+        <div class="stat-label">Total Reps</div>
+        <div class="stat-value" id="totalReps">0</div>
+        <div class="stat-unit">this session</div>
+      </div>
+      <div class="stat-card" id="statTime">
+        <div class="stat-label">Active Time</div>
+        <div class="stat-value" id="activeTimeDisplay">0:00</div>
+        <div class="stat-unit">mins : secs</div>
+      </div>
+    </div>
+
+    <!-- TIMER PANEL -->
+    <div class="workout-panel">
+      <div class="panel-header">
+        <div class="panel-title">SESSION TIMER</div>
+        <div class="badge badge-green" id="timerStatus">READY</div>
+      </div>
+      <div class="panel-body">
+        <div class="timer-display">
+          <div class="timer-big" id="timerDisplay">00:00:00</div>
+          <div class="timer-label">HH : MM : SS</div>
+        </div>
+
+        <div class="controls">
+          <button class="btn btn-accent btn-wide" id="startStopBtn" onclick="toggleTimer()">START</button>
+          <button class="btn btn-danger" onclick="resetTimer()">RESET</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- REP + SET PANEL -->
+    <div class="workout-panel">
+      <div class="panel-header">
+        <div class="panel-title">CURRENT SET</div>
+        <div class="badge badge-yellow" id="setNumBadge">SET 1</div>
+      </div>
+      <div class="panel-body">
+
+        <!-- REST TIMER BAR -->
+        <div id="restSection" style="display:none;">
+          <div class="rest-bar-bg"><div class="rest-bar-fill" id="restBarFill" style="width:100%"></div></div>
+          <div class="rest-label">REST — <span id="restCountdown">60</span>s remaining</div>
+        </div>
+
+        <div class="rep-set-row">
+          <div class="counter-box">
+            <div class="counter-label">Reps This Set</div>
+            <div class="counter-val" id="repCount">0</div>
+            <div class="counter-btns">
+              <button class="ctr-btn" onclick="changeRep(-1)">−</button>
+              <button class="ctr-btn plus" onclick="changeRep(1)">+</button>
+            </div>
+          </div>
+          <div class="counter-box">
+            <div class="counter-label">Set Target</div>
+            <div class="counter-val" id="targetReps">15</div>
+            <div class="counter-btns">
+              <button class="ctr-btn" onclick="changeTarget(-5)">−</button>
+              <button class="ctr-btn plus" onclick="changeTarget(5)">+</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="input-row">
+          <div class="input-group">
+            <label class="input-label">Rest (seconds)</label>
+            <input class="input-field" type="number" id="restDuration" value="60" min="5" max="300">
+          </div>
+          <div class="input-group">
+            <label class="input-label">Session Note</label>
+            <input class="input-field" type="text" id="sessionNote" placeholder="e.g. deep squats">
+          </div>
+        </div>
+
+        <div class="controls">
+          <button class="btn btn-accent btn-full" onclick="logSet()">✓ LOG SET &amp; START REST</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- SET LOG -->
+    <div class="workout-panel">
+      <div class="panel-header">
+        <div class="panel-title">SET LOG</div>
+        <button class="badge badge-red" onclick="clearSession()" style="cursor:pointer;border:none;">CLEAR</button>
+      </div>
+      <div id="setLogContainer">
+        <div class="log-empty" id="logEmpty">— No sets logged yet. Start your session! —</div>
+        <table class="log-table" id="setLogTable" style="display:none;">
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>Reps</th>
+              <th>Target</th>
+              <th>Time Logged</th>
+              <th>Rest</th>
+            </tr>
+          </thead>
+          <tbody id="setLogBody"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- FINISH -->
+    <button class="btn btn-accent" style="width:100%;padding:16px;font-size:0.85rem;letter-spacing:2px;border-radius:12px;margin-bottom:20px;" onclick="finishSession()">⚡ FINISH &amp; SAVE SESSION</button>
+  </div>
+</div>
+
+<!-- ====== HISTORY PAGE ====== -->
+<div class="page" id="page-history">
+  <div class="container">
+    <div class="hero">
+      <div class="hero-label">Training Log</div>
+      <div class="hero-title">SESSION<br><span>HISTORY</span></div>
+      <div class="hero-sub">Every rep you've ever tracked.</div>
+    </div>
+    <div id="historyContainer">
+      <div class="log-empty">— No saved sessions yet. Finish a workout to see it here! —</div>
+    </div>
+  </div>
+</div>
+
+<!-- ====== GOALS PAGE ====== -->
+<div class="page" id="page-goals">
+  <div class="container">
+    <div class="hero">
+      <div class="hero-label">Progress Tracking</div>
+      <div class="hero-title">YOUR<br><span>GOALS</span></div>
+      <div class="hero-sub">Set targets. Crush them. Repeat.</div>
+    </div>
+
+    <!-- Goal Input -->
+    <div class="workout-panel" style="margin-bottom:28px;">
+      <div class="panel-header"><div class="panel-title">SET A GOAL</div></div>
+      <div class="panel-body">
+        <div class="input-row">
+          <div class="input-group">
+            <label class="input-label">Goal Name</label>
+            <input class="input-field" id="goalName" placeholder="e.g. 100 squats/day">
+          </div>
+          <div class="input-group">
+            <label class="input-label">Target Reps</label>
+            <input class="input-field" type="number" id="goalTarget" placeholder="100">
+          </div>
+        </div>
+        <button class="btn btn-accent" style="width:100%;padding:13px;" onclick="addGoal()">+ ADD GOAL</button>
+      </div>
+    </div>
+
+    <div id="goalsContainer">
+      <div class="log-empty">— Add a goal above to track your progress! —</div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ======================== STATE ========================
+let timerInterval = null;
+let timerRunning = false;
+let totalSeconds = 0;
+let currentRep = 0;
+let currentTarget = 15;
+let totalRepsSession = 0;
+let setLogs = [];
+let currentSetNum = 1;
+let restInterval = null;
+
+let sessions = JSON.parse(localStorage.getItem('sqf_sessions') || '[]');
+let goals = JSON.parse(localStorage.getItem('sqf_goals') || '[]');
+
+// ======================== CLOCK ========================
+function updateClock() {
+  const now = new Date();
+  const h = String(now.getHours()).padStart(2,'0');
+  const m = String(now.getMinutes()).padStart(2,'0');
+  const s = String(now.getSeconds()).padStart(2,'0');
+  document.getElementById('navTime').textContent = `${h}:${m}:${s}`;
+
+  const days = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+  const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  const dateStr = `${days[now.getDay()]}, ${now.getDate()} ${months[now.getMonth()]} ${now.getFullYear()}`;
+  document.getElementById('navDate').textContent = dateStr;
+  document.getElementById('heroDate').textContent = dateStr;
+}
+setInterval(updateClock, 1000);
+updateClock();
+
+// ======================== NAV ========================
+function showPage(id) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
+  document.getElementById(`page-${id}`).classList.add('active');
+  event.currentTarget.classList.add('active');
+  if (id === 'history') renderHistory();
+  if (id === 'goals') renderGoals();
+}
+
+// ======================== TIMER ========================
+function toggleTimer() {
+  if (timerRunning) {
+    clearInterval(timerInterval);
+    timerRunning = false;
+    document.getElementById('startStopBtn').textContent = 'RESUME';
+    document.getElementById('timerDisplay').classList.remove('running', 'pulse');
+    document.getElementById('timerDisplay').classList.add('paused');
+    document.getElementById('timerStatus').textContent = 'PAUSED';
+    document.getElementById('timerStatus').className = 'badge badge-yellow';
+  } else {
+    timerInterval = setInterval(() => {
+      totalSeconds++;
+      updateTimerDisplay();
+      updateActiveTime();
+    }, 1000);
+    timerRunning = true;
+    document.getElementById('startStopBtn').textContent = 'PAUSE';
+    document.getElementById('timerDisplay').classList.add('running', 'pulse');
+    document.getElementById('timerDisplay').classList.remove('paused');
+    document.getElementById('timerStatus').textContent = 'ACTIVE';
+    document.getElementById('timerStatus').className = 'badge badge-green';
+  }
+}
+
+function resetTimer() {
+  clearInterval(timerInterval);
+  timerRunning = false;
+  totalSeconds = 0;
+  updateTimerDisplay();
+  document.getElementById('startStopBtn').textContent = 'START';
+  document.getElementById('timerDisplay').className = 'timer-big';
+  document.getElementById('timerStatus').textContent = 'READY';
+  document.getElementById('timerStatus').className = 'badge badge-green';
+}
+
+function updateTimerDisplay() {
+  const h = Math.floor(totalSeconds / 3600);
+  const m = Math.floor((totalSeconds % 3600) / 60);
+  const s = totalSeconds % 60;
+  document.getElementById('timerDisplay').textContent =
+    `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
+}
+
+function updateActiveTime() {
+  const m = Math.floor(totalSeconds / 60);
+  const s = totalSeconds % 60;
+  document.getElementById('activeTimeDisplay').textContent = `${m}:${String(s).padStart(2,'0')}`;
+}
+
+// ======================== REPS / SETS ========================
+function changeRep(delta) {
+  currentRep = Math.max(0, currentRep + delta);
+  document.getElementById('repCount').textContent = currentRep;
+}
+
+function changeTarget(delta) {
+  currentTarget = Math.max(1, currentTarget + delta);
+  document.getElementById('targetReps').textContent = currentTarget;
+}
+
+function logSet() {
+  if (currentRep === 0) { showToast('Add at least 1 rep!'); return; }
+
+  const now = new Date();
+  const timeStr = `${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}:${String(now.getSeconds()).padStart(2,'0')}`;
+  const restDur = parseInt(document.getElementById('restDuration').value) || 60;
+
+  const entry = {
+    set: currentSetNum,
+    reps: currentRep,
+    target: currentTarget,
+    time: timeStr,
+    rest: restDur
+  };
+
+  setLogs.push(entry);
+  totalRepsSession += currentRep;
+  currentSetNum++;
+
+  document.getElementById('totalSets').textContent = setLogs.length;
+  document.getElementById('totalReps').textContent = totalRepsSession;
+
+  // Animate stat cards
+  ['statSets','statReps','statTime'].forEach(id => {
+    document.getElementById(id).classList.add('lit');
+  });
+
+  renderSetLog();
+  updateSetBadge();
+
+  // Reset rep counter
+  currentRep = 0;
+  document.getElementById('repCount').textContent = 0;
+
+  showToast(`Set ${entry.set} logged — ${entry.reps} reps!`);
+  startRestTimer(restDur);
+}
+
+function updateSetBadge() {
+  document.getElementById('setNumBadge').textContent = `SET ${currentSetNum}`;
+}
+
+function renderSetLog() {
+  const body = document.getElementById('setLogBody');
+  body.innerHTML = '';
+  document.getElementById('logEmpty').style.display = 'none';
+  document.getElementById('setLogTable').style.display = 'table';
+
+  setLogs.forEach(s => {
+    const tr = document.createElement('tr');
+    tr.className = 'slide-in';
+    const hit = s.reps >= s.target;
+    tr.innerHTML = `
+      <td style="color:var(--text2)">${s.set}</td>
+      <td style="color:${hit ? 'var(--accent)' : 'var(--red)'}; font-weight:500">${s.reps}</td>
+      <td style="color:var(--text2)">${s.target}</td>
+      <td>${s.time}</td>
+      <td style="color:var(--text2)">${s.rest}s</td>
+    `;
+    body.appendChild(tr);
+  });
+}
+
+function clearSession() {
+  if (!confirm('Clear all sets from this session?')) return;
+  setLogs = []; currentRep = 0; totalRepsSession = 0; currentSetNum = 1;
+  document.getElementById('repCount').textContent = 0;
+  document.getElementById('totalSets').textContent = 0;
+  document.getElementById('totalReps').textContent = 0;
+  document.getElementById('logEmpty').style.display = 'block';
+  document.getElementById('setLogTable').style.display = 'none';
+  document.getElementById('setLogBody').innerHTML = '';
+  updateSetBadge();
+  showToast('Session cleared.');
+}
+
+// ======================== REST TIMER ========================
+function startRestTimer(duration) {
+  clearInterval(restInterval);
+  let remaining = duration;
+  document.getElementById('restSection').style.display = 'block';
+  document.getElementById('restCountdown').textContent = remaining;
+  document.getElementById('restBarFill').style.width = '100%';
+
+  restInterval = setInterval(() => {
+    remaining--;
+    document.getElementById('restCountdown').textContent = remaining;
+    document.getElementById('restBarFill').style.width = `${(remaining / duration) * 100}%`;
+    if (remaining <= 0) {
+      clearInterval(restInterval);
+      document.getElementById('restSection').style.display = 'none';
+      showToast('Rest done — start your next set!');
+    }
+  }, 1000);
+}
+
+// ======================== FINISH SESSION ========================
+function finishSession() {
+  if (setLogs.length === 0) { showToast('Log at least one set first!'); return; }
+
+  const now = new Date();
+  const session = {
+    date: now.toLocaleDateString('en-ZA', { weekday:'long', year:'numeric', month:'short', day:'numeric' }),
+    time: now.toLocaleTimeString('en-ZA', { hour:'2-digit', minute:'2-digit' }),
+    timestamp: now.toISOString(),
+    sets: setLogs.length,
+    totalReps: totalRepsSession,
+    durationSeconds: totalSeconds,
+    note: document.getElementById('sessionNote').value || '',
+    log: [...setLogs]
+  };
+
+  sessions.unshift(session);
+  localStorage.setItem('sqf_sessions', JSON.stringify(sessions));
+
+  // Update goals
+  updateGoalProgress(totalRepsSession);
+
+  showToast(`Session saved — ${totalRepsSession} reps in ${setLogs.length} sets!`);
+  clearSession();
+  resetTimer();
+  document.getElementById('sessionNote').value = '';
+}
+
+// ======================== HISTORY ========================
+function renderHistory() {
+  const container = document.getElementById('historyContainer');
+  if (sessions.length === 0) {
+    container.innerHTML = '<div class="log-empty">— No saved sessions yet. Finish a workout to see it here! —</div>';
+    return;
+  }
+
+  container.innerHTML = sessions.map((s, i) => {
+    const dur = s.durationSeconds;
+    const durStr = dur >= 3600
+      ? `${Math.floor(dur/3600)}h ${Math.floor((dur%3600)/60)}m`
+      : `${Math.floor(dur/60)}m ${dur%60}s`;
+    return `
+    <div class="history-card slide-in">
+      <div class="history-card-header">
+        <div>
+          <div class="history-date">${s.date}</div>
+          <div class="history-meta">${s.time}${s.note ? ' · ' + s.note : ''}</div>
+        </div>
+        <div class="badge badge-green">${s.sets} sets</div>
+      </div>
+      <div class="history-summary">
+        <div class="h-stat"><div class="h-stat-v">${s.totalReps}</div><div class="h-stat-l">Total Reps</div></div>
+        <div class="h-stat"><div class="h-stat-v">${s.sets}</div><div class="h-stat-l">Sets</div></div>
+        <div class="h-stat"><div class="h-stat-v">${durStr}</div><div class="h-stat-l">Duration</div></div>
+        <div class="h-stat"><div class="h-stat-v">${s.totalReps > 0 ? Math.round(s.totalReps/s.sets) : 0}</div><div class="h-stat-l">Avg Reps/Set</div></div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// ======================== GOALS ========================
+function addGoal() {
+  const name = document.getElementById('goalName').value.trim();
+  const target = parseInt(document.getElementById('goalTarget').value);
+  if (!name || !target || target < 1) { showToast('Enter a name and target!'); return; }
+
+  goals.push({ name, target, current: 0, id: Date.now() });
+  localStorage.setItem('sqf_goals', JSON.stringify(goals));
+  document.getElementById('goalName').value = '';
+  document.getElementById('goalTarget').value = '';
+  renderGoals();
+  showToast(`Goal "${name}" added!`);
+}
+
+function updateGoalProgress(reps) {
+  goals = goals.map(g => ({ ...g, current: g.current + reps }));
+  localStorage.setItem('sqf_goals', JSON.stringify(goals));
+}
+
+function deleteGoal(id) {
+  goals = goals.filter(g => g.id !== id);
+  localStorage.setItem('sqf_goals', JSON.stringify(goals));
+  renderGoals();
+}
+
+function renderGoals() {
+  const c = document.getElementById('goalsContainer');
+  if (goals.length === 0) {
+    c.innerHTML = '<div class="log-empty">— Add a goal above to track your progress! —</div>';
+    return;
+  }
+  c.innerHTML = goals.map(g => {
+    const pct = Math.min(100, Math.round((g.current / g.target) * 100));
+    const done = pct >= 100;
+    return `
+    <div class="goal-row slide-in">
+      <div class="goal-header">
+        <div class="goal-name">${g.name} ${done ? '🏆' : ''}</div>
+        <div style="display:flex;gap:10px;align-items:center;">
+          <div class="goal-prog-text">${g.current} / ${g.target} reps</div>
+          <button onclick="deleteGoal(${g.id})" style="background:none;border:none;color:var(--red);cursor:pointer;font-size:0.75rem;font-family:'DM Mono',monospace;">✕</button>
+        </div>
+      </div>
+      <div class="goal-bar-bg"><div class="goal-bar-fill" style="width:${pct}%"></div></div>
+      <div class="goal-sub">${pct}% complete${done ? ' — Goal crushed! 💪' : ''}</div>
+    </div>`;
+  }).join('');
+}
+
+// ======================== TOAST ========================
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2800);
+}
+</script>
+</body>
+</html>
